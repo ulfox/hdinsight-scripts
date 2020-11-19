@@ -64,7 +64,7 @@ systemctl stop krb-ticket-renewal.service
 
 rm -rf /opt/lenses
 rm -rf /etc/krb5.d
-rm -f /etc/lenses /etc/systemd/system/lenses-io.service 
+rm -f /etc/lenses.env /etc/systemd/system/lenses-io.service 
 rm -f /etc/systemd/system/krb-ticket-init.service
 rm -f /etc/systemd/system/krb-ticket-renewal.service
 rm -f /tmp/lenses-latest-linux64.tar.gz /tmp/lenses-latest-linux64.tar.gz.sha256
