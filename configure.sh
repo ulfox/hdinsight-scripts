@@ -444,14 +444,29 @@ touch /etc/krb5.d/kafka_client_jaas.conf
 cat << EOF > /etc/krb5.d/kafka_client_jaas.conf
 KafkaClient {
    com.sun.security.auth.module.Krb5LoginModule required
+   refreshKrb5Config=true
+   useTicketCache=true
+   renewTGT=true
+   storeKey=true
+   debug=true
+   isInitiator=true
+   //storePass=true
    useKeyTab=true
    storeKey=true
    keyTab="${ESP_KEYTAB_LOCATION}/${ESP_KEYTAB_NAME}"
    principal="${ESP_KEYTAB_PRINCIPAL}"
    serviceName="kafka";
+
 };
 Client {
    com.sun.security.auth.module.Krb5LoginModule required
+   refreshKrb5Config=true
+   useTicketCache=true
+   renewTGT=true
+   storeKey=true
+   debug=true
+   isInitiator=true
+   //storePass=true
    useKeyTab=true
    storeKey=true
    keyTab="${ESP_KEYTAB_LOCATION}/${ESP_KEYTAB_NAME}"
@@ -459,7 +474,38 @@ Client {
    serviceName="zookeeper";
 };
 EOF
-chmod 0600 /etc/krb5.d/kafka_client_jaas.conf
+
+cat << EOF > /etc/krb5.d/kafka_client_jaas_creds.conf
+KafkaClient {
+   com.sun.security.auth.module.Krb5LoginModule required
+   refreshKrb5Config=true
+   useTicketCache=true
+   renewTGT=true
+   doNotPrompt=true
+   useKeyTab=false
+   storeKey=false
+   debug=true
+   isInitiator=true
+   storePass=true
+   principal="${ESP_USERNAME}"
+   serviceName="kafka";
+};
+Client {
+   com.sun.security.auth.module.Krb5LoginModule required
+   refreshKrb5Config=true
+   useTicketCache=true
+   renewTGT=true
+   doNotPrompt=true
+   useKeyTab=false
+   storeKey=false
+   debug=true
+   isInitiator=true
+   storePass=true
+   principal="${ESP_USERNAME}"
+   serviceName="zookeeper";
+};
+EOF
+chmod 0600 /etc/krb5.d/kafka_client_jaas.conf /etc/krb5.d/kafka_client_jaas_creds.conf
 
 ## Configure env for ESP
 if [ "${ESP_ENABLED}" == "True" ]; then
@@ -541,7 +587,7 @@ if [ "${ESP_ENABLED}" == "True" ]; then
     if [ "${ESP_KEYTAB_ENABLED}" == "True" ] || [ "${ESP_JAAS_ENABLED}" == "True" ]; then
         export JAAS_PATH="/etc/krb5.d/kafka_client_jaas.conf"
     else
-        export JAAS_PATH="/usr/hdp/current/kafka-broker/conf/kafka_client_jaas.conf"
+        export JAAS_PATH="/etc/krb5.d/kafka_client_jaas_creds.conf"
     fi
 
     ### Set LESES_OPTS with the appropriate jaas file.
