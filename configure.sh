@@ -33,46 +33,54 @@ mkdir -vp /var/log/lenses
 base64 <<< "${@}" > /var/log/lenses/env
 chmod 0600 /var/log/lenses/env
 
+function set_optarg_env() {
+    if [ "${2}" == "" ] || [ -z "${2}" ]; then
+        :
+    else
+        export "${1}=${2}"
+    fi
+}
+
 while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
   case ${optname} in
     n)
-        CLUSTER_NAME="${OPTARG}";;
+        set_optarg_env CLUSTER_NAME "${OPTARG}";;
     V)
-        LENSES_VERSION="${OPTARG}";;
+        set_optarg_env LENSES_VERSION "${OPTARG}";;
     l)
-        LICENSE="${OPTARG}";;
+        set_optarg_env LICENSE "${OPTARG}";;
     U)
-        LENSES_ADMIN_NAME="${OPTARG}";;
+        set_optarg_env LENSES_ADMIN_NAME "${OPTARG}";;
     P)
-        LENSES_PASSWORD_NAME="${OPTARG}";;
+        set_optarg_env LENSES_PASSWORD_NAME "${OPTARG}";;
     e)
-        ESP_ENABLED="${OPTARG}";;
+        set_optarg_env ESP_ENABLED "${OPTARG}";;
     c)
-        ESP_CREDENTIALS_ENABLED="${OPTARG}";;
+        set_optarg_env ESP_CREDENTIALS_ENABLED "${OPTARG}";;
     u)
-        ESP_USERNAME="${OPTARG}";;
+        set_optarg_env ESP_USERNAME "${OPTARG}";;
     p)
-        ESP_PASSWORD="${OPTARG}";;
+        set_optarg_env ESP_PASSWORD "${OPTARG}";;
     k)
-        ESP_KEYTAB_ENABLED="${OPTARG}";;
+        set_optarg_env ESP_KEYTAB_ENABLED "${OPTARG}";;
     v)
-        ESP_B64_KEYTAB="${OPTARG}";;
+        set_optarg_env ESP_B64_KEYTAB "${OPTARG}";;
     x)
-        ESP_KEYTAB_PRINCIPAL="${OPTARG}";;
+        set_optarg_env ESP_KEYTAB_PRINCIPAL "${OPTARG}";;
     j)
-        ESP_JAAS_ENABLED="${OPTARG}";;
+        set_optarg_env ESP_JAAS_ENABLED "${OPTARG}";;
     J)
-        ESP_B64_JAAS="${OPTARG}";;
+        set_optarg_env ESP_B64_JAAS "${OPTARG}";;
     L)
-        ESP_KEYTAB_LOCATION="${OPTARG}";;
+        set_optarg_env ESP_KEYTAB_LOCATION "${OPTARG}";;
     N)
-        ESP_KEYTAB_NAME="${OPTARG}";;
+        set_optarg_env ESP_KEYTAB_NAME "${OPTARG}";;
     a)
-        LENSES_CUSTOM_ARCHIVE_ENABLED="${OPTARG}";;
+        set_optarg_env LENSES_CUSTOM_ARCHIVE_ENABLED "${OPTARG}";;
     R)
-        LENSES_CUSTOM_ARCHIVE_URL="${OPTARG}";;
+        set_optarg_env LENSES_CUSTOM_ARCHIVE_URL "${OPTARG}";;
     I)
-        LENSES_PORT="${OPTARG}";;
+        set_optarg_env LENSES_PORT "${OPTARG}";;
     *)
         echo "Option ${optname} is not supported" | tee -a ;;
   esac
