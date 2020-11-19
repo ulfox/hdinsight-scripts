@@ -6,7 +6,14 @@ set -o pipefail
 trap 'catch_err $? $LINENO' ERR
 
 function log_action() {
-    echo -e "$(printf  '%(%Y-%m-%d %H:%M:%S)T\n'): ${*}"  | tee -a /var/log/lenses/setup.log
+    echo "$(printf  '%(%Y-%m-%d %H:%M:%S)T\n'): ${*}"  | tee -a /var/log/lenses/setup.log
+}
+
+function die() {
+    for i in "${@}"; do
+        log_action "${i}"
+    done
+    exit 1
 }
 
 function catch_err() {
@@ -15,7 +22,7 @@ function catch_err() {
 
 mkdir -vp /var/log/lenses
 
-echo "${@}" /var/log/lenses/env
+ "${@}" /var/log/lenses/env
 
 while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
   case ${optname} in
@@ -98,8 +105,7 @@ if [ ! -e "${ESP_KEYTAB_LOCATION}" ]; then
     chmod -R 0700 "${ESP_KEYTAB_LOCATION}"
 else
     if [ ! -d "${ESP_KEYTAB_LOCATION}" ]; then
-        log_action "Custom keytab path: ${ESP_KEYTAB_LOCATION} does not appear to be a directory. Exiting..."
-        exit 1
+        die "Custom keytab path: ${ESP_KEYTAB_LOCATION} does not appear to be a directory. Exiting..."
     fi
 fi
 
@@ -167,8 +173,7 @@ if [ ! -f "${TMP_DIR}/${LENSES_ARCHIVE}" ] && [ "${LENSES_CUSTOM_ARCHIVE_ENABLED
     wget -q "${LENSES_ARCHIVE_URI}" -P "${TMP_DIR}"
 
     if ! check_sha256 "${TMP_DIR}" "${LENSES_ARCHIVE_SHA256}"; then
-        log_action "Error: sha256 failed verification. Exiting..."
-        exit 1
+        die "Error: sha256 failed verification. Exiting..."
     fi
 elif [ -f "${TMP_DIR}/${LENSES_ARCHIVE}" ] && [ "${LENSES_CUSTOM_ARCHIVE_ENABLED}" != "True" ]; then
     log_action "Archive already exists"
@@ -181,16 +186,14 @@ elif [ -f "${TMP_DIR}/${LENSES_ARCHIVE}" ] && [ "${LENSES_CUSTOM_ARCHIVE_ENABLED
         wget -q "${LENSES_ARCHIVE_URI}" -P "${TMP_DIR}"
 
         if ! check_sha256 "${TMP_DIR}" "${LENSES_ARCHIVE_SHA256}"; then
-            log_action "Error: sha256 failed verification. Exiting..."
-            exit 1
+            die "Error: sha256 failed verification. Exiting..."
         fi
     fi
 else
     log_action "Preparing to fetch custom archive"
     ### Check if a url has been provided.
     if [ -z "${LENSES_CUSTOM_ARCHIVE_URL// }" ]; then
-        log_action "Custom archive has been enabled but no url was provided"
-        exit 1
+        die "Custom archive has been enabled but no url was provided"
     fi
 
     ### Export the archive name from the URL and check from empty string
@@ -199,8 +202,7 @@ else
     if [ -n "${LENSES_ARCHIVE// }" ]; then
         rm -f "${TMP_DIR}/${LENSES_ARCHIVE}"
     else
-        log_action "Can not extract custom archive name."
-        exit 1
+        die "Can not extract custom archive name."
     fi
 
     log_action "Fetching Archive"
@@ -222,9 +224,7 @@ tar -xzf "${TMP_DIR}/${LENSES_ARCHIVE}" -C /opt/
 ## We expect both official Lenses archives and custom archives to contain
 ## /lenses under the archive root
 if [ ! -e /opt/lenses ]; then
-    log_action "Custom archive root dir is not lenses"
-    log_action "Error: /opt/lenses does not exist after extracting"
-    exit 1
+    die "Custom archive root dir is not lenses" "Error: /opt/lenses does not exist after extracting"
 fi
 
 ## AutoDiscover Kafka Brokers and Zookeeper
@@ -237,8 +237,7 @@ declare -a LENSES_KAFKA_BROKERS=$(curl \
     | jq -r '.host_components[].HostRoles.host_name')
 
 if [ -z "${LENSES_KAFKA_BROKERS}" ]; then
-    log_action "[ERROR] Unable to find Cluster Kafka Brokers"         
-    exit 1
+    die "[ERROR] Unable to find Cluster Kafka Brokers"         
 fi
 
 ### Declare an array and populate it with the zookeeper servers
@@ -280,8 +279,7 @@ fi
 
 ### Raise error in case default admin password has not been set
 if [ -z "${LENSES_PASSWORD_NAME// }" ]; then
-    log_action "No Lenses default admin password was provided. Exiting..."
-    exit 1
+    die "No Lenses default admin password was provided. Exiting..."
 fi
 
 ### Keep the permissions of this file 0600
@@ -299,8 +297,7 @@ elif [ "${ESP_ENABLED}" == "True" ]; then
     echo 'lenses.kafka.settings.client.security.protocol = SASL_PLAINTEXT' \
         >> /opt/lenses/lenses.conf
 else
-    log_action "ESP_ENABLED can only be True or False"
-    exit 1
+    die "ESP_ENABLED can only be True or False"
 fi
 
 ### Configure lenses.kafka.brokers
@@ -525,8 +522,7 @@ if [ "${ESP_ENABLED}" == "True" ]; then
 
     ### Exit if esp is enabled but neither credentials, nor keytab authentication methods was set
     if [ "${ESP_CREDENTIALS_ENABLED}" != "True" ] && [ "${ESP_KEYTAB_ENABLED}" != "True" ]; then
-        log_action "ESP was enabled but credentials auth or keytab auth was set to true."
-        exit 1
+        die "ESP was enabled but credentials auth or keytab auth was set to true."
     fi
 
     ### Keytab authentication. Here we write the keytab to disk, either in /etc/krb5.d/krb5.keytab
@@ -535,8 +531,7 @@ if [ "${ESP_ENABLED}" == "True" ]; then
 
         #### Bailout if keytab encoded string is empty
         if [ -z "${ESP_B64_KEYTAB// }" ]; then
-            log_action "No b64 keytab was provided"
-            exit 1
+            die "No b64 keytab was provided"
         fi
 
         base64 -d <<< "${ESP_B64_KEYTAB}" > "${ESP_KEYTAB_LOCATION}/${ESP_KEYTAB_NAME}"
@@ -582,8 +577,7 @@ if [ "${ESP_ENABLED}" == "True" ]; then
     ###
     if [ "${ESP_JAAS_ENABLED}" == "True" ]; then
         [ -z "${ESP_B64_JAAS// }" ] && {
-            log_action "No b64 jaas was provided"
-            exit 1
+            die "No b64 jaas was provided"
         }
 
         base64 -d <<< "${ESP_B64_JAAS}" > "/etc/krb5.d/kafka_client_jaas.conf"
@@ -635,8 +629,7 @@ if [ "${ESP_ENABLED}" == "True" ] && [ "${ENABLE_KRB_TICKET_INIT}" == "True" ]; 
 
     sleep 2
     if ! systemctl is-active krb-ticket-init.service >/dev/null 2>&1; then
-        log_action "Ticket init service failed"
-        exit 1
+        die "Ticket init service failed"
     fi
 fi
 
