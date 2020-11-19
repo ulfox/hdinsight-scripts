@@ -31,6 +31,34 @@ Once you have typed your password, it is time to create the keytab, for that
 
 Then exit ktutil by typing `q`
 
+#### Example creating a keytab
+
+    addent -password -p christos-test -k 1 -e RC4-HMAC
+    Password for christos-test@LENSES.IO:
+
+    wkt /etc/christos-test.keytab
+
+---
+
+Note: Please ensure that you provided the correct password and principal name otherwise the deployment (see next section) will fail
+
+---
+
+Now make a backup of the keytab and create a base64 string from it
+
+    base64 < principal-name.keytab | tr -d '\n'
+
+Keep somewhere safe both the base64 encoded string and the keytab
+
+#### Example creating a base64 encoded string from the keytab
+
+    base64 < christos.keytab | tr -d '\n'
+    B..........2/
+
+Note: Ensure you copy the whole string correctly, otherwise deployment will fail or Lenses will not be able to auth
+
+### Deploy to Azure with Azure HDInsight Templates using a Keytab
+
 Deploy the `esp.json` azure resource template and select the following values
 
 - Cluster Name: The name of the HDInsight cluster
@@ -41,8 +69,11 @@ Deploy the `esp.json` azure resource template and select the following values
 - Authenticate with Keytab: True
 - Keytab Base64Encoded: The base64 encoded string of the keytab you created. To do that issue:  base64 <principal-name.keytab |tr -d '\n'
 - Keytab Principal Name: The principal name of the user from the ktutil stapes
+- Install Script URL: The Instal script url. Default: https://raw.githubusercontent.com/ulfox/hdinsight-scripts/main/configure.sh
 
-## Already Deployed Lenses Node
+Click deploy and wait for the deployment to finish.
+
+### Already Deployed Lenses Node
 
 If you have a Lenses instance already deployed, then you can SSH into that instance and run the script
 
