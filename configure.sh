@@ -318,7 +318,7 @@ fi
 
 ### Append Lenses License
 cat << EOF > /opt/lenses/license.json
-${LICENSE}
+$(base64 -d <<< ${LICENSE})
 EOF
 chmod 0600 /opt/lenses/license.json
 
