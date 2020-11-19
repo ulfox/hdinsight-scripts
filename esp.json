@@ -167,7 +167,7 @@
         },
         "installScriptURL": {
         "type": "string",
-        "defaultValue": "https://archive.landoop.com/repository/cloud/azure/hdinsight/configure.sh",
+        "defaultValue": "https://raw.githubusercontent.com/ulfox/hdinsight-scripts/main/configure.sh",
         "metadata": {
             "description": "(Warning, URL must be accessible from the Nodes Network) The install script that will be used to configure the Edgenode and install Lenses"
         }

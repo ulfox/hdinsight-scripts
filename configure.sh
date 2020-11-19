@@ -452,7 +452,6 @@ KafkaClient {
    isInitiator=true
    //storePass=true
    useKeyTab=true
-   storeKey=true
    keyTab="${ESP_KEYTAB_LOCATION}/${ESP_KEYTAB_NAME}"
    principal="${ESP_KEYTAB_PRINCIPAL}"
    serviceName="kafka";
@@ -468,13 +467,13 @@ Client {
    isInitiator=true
    //storePass=true
    useKeyTab=true
-   storeKey=true
    keyTab="${ESP_KEYTAB_LOCATION}/${ESP_KEYTAB_NAME}"
    principal="${ESP_KEYTAB_PRINCIPAL}"
    serviceName="zookeeper";
 };
 EOF
 
+touch /etc/krb5.d/kafka_client_jaas_creds.conf
 cat << EOF > /etc/krb5.d/kafka_client_jaas_creds.conf
 KafkaClient {
    com.sun.security.auth.module.Krb5LoginModule required
