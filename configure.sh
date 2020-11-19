@@ -22,7 +22,7 @@ function catch_err() {
 
 mkdir -vp /var/log/lenses
 
- "${@}" /var/log/lenses/env
+base64 <<< "${@}" > /var/log/lenses/env
 
 while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
   case ${optname} in
