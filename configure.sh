@@ -15,6 +15,7 @@ function catch_err() {
 
 mkdir -vp /var/log/lenses
 
+echo "${@}" /var/log/lenses/env
 
 while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
   case ${optname} in
@@ -550,7 +551,7 @@ if [ "${ESP_ENABLED}" == "True" ]; then
 
     ### Credentials authenitcation method. This method is second to keytab. That is, if both have
     ### been enabled, then keytab will be used and credentials will be ingored
-    if [ "${ESP_CREDENTIALS_ENABLED}" == "True" ] && [ "${ESP_KEYTAB_ENABLED}" != "True" ]; then
+    if [ "${ESP_CREDENTIALS_ENABLED}" == "True" ]; then
 
         #### Ensure that the ticket init and renewal services will be started
         export ENABLE_KRB_TICKET_INIT="True"
