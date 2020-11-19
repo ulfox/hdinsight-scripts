@@ -539,6 +539,8 @@ if [ "${ESP_ENABLED}" == "True" ]; then
 
     ### Exit if esp is enabled but neither credentials, nor keytab authentication methods was set
     if [ "${ESP_CREDENTIALS_ENABLED}" != "True" ] && [ "${ESP_KEYTAB_ENABLED}" != "True" ]; then
+        echo "${*}"
+        echo "${@}"
         die "ESP was enabled but credentials auth or keytab auth was set to true."
     fi
 
