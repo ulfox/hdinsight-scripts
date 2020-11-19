@@ -33,57 +33,117 @@ mkdir -vp /var/log/lenses
 base64 <<< "${@}" > /var/log/lenses/env
 chmod 0600 /var/log/lenses/env
 
-function set_optarg_env() {
-    if [ "${2}" == "" ] || [ -z "${2}" ]; then
-        :
+### Check Args function
+function args_check() {
+    if [ "${1}" == "" ] || [ -z "${1// }" ] || [[ "${1}" =~ ^\- ]]; then
+        return 1
     else
-        export "${1}=${2}"
+        return 0
     fi
 }
 
-while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
-  case ${optname} in
-    n)
-        set_optarg_env CLUSTER_NAME "${OPTARG}";;
-    V)
-        set_optarg_env LENSES_VERSION "${OPTARG}";;
-    l)
-        set_optarg_env LICENSE "${OPTARG}";;
-    U)
-        set_optarg_env LENSES_ADMIN_NAME "${OPTARG}";;
-    P)
-        set_optarg_env LENSES_PASSWORD_NAME "${OPTARG}";;
-    e)
-        set_optarg_env ESP_ENABLED "${OPTARG}";;
-    c)
-        set_optarg_env ESP_CREDENTIALS_ENABLED "${OPTARG}";;
-    u)
-        set_optarg_env ESP_USERNAME "${OPTARG}";;
-    p)
-        set_optarg_env ESP_PASSWORD "${OPTARG}";;
-    k)
-        set_optarg_env ESP_KEYTAB_ENABLED "${OPTARG}";;
-    v)
-        set_optarg_env ESP_B64_KEYTAB "${OPTARG}";;
-    x)
-        set_optarg_env ESP_KEYTAB_PRINCIPAL "${OPTARG}";;
-    j)
-        set_optarg_env ESP_JAAS_ENABLED "${OPTARG}";;
-    J)
-        set_optarg_env ESP_B64_JAAS "${OPTARG}";;
-    L)
-        set_optarg_env ESP_KEYTAB_LOCATION "${OPTARG}";;
-    N)
-        set_optarg_env ESP_KEYTAB_NAME "${OPTARG}";;
-    a)
-        set_optarg_env LENSES_CUSTOM_ARCHIVE_ENABLED "${OPTARG}";;
-    R)
-        set_optarg_env LENSES_CUSTOM_ARCHIVE_URL "${OPTARG}";;
-    I)
-        set_optarg_env LENSES_PORT "${OPTARG}";;
-    *)
-        echo "Option ${optname} is not supported" | tee -a ;;
-  esac
+### Optionarg parserer
+while [ "${#}" -gt 0 ]; do
+    case "${1}" in
+        "-n")
+            if args_check "${2}"; then
+                export CLUSTER_NAME="${2}"
+                shift 1
+            fi;;
+        "-V")
+            if args_check "${2}"; then
+                export LENSES_VERSION="${2}"
+                shift 1
+            fi;;
+        "-l")
+            if args_check "${2}"; then
+                export LICENSE="${2}"
+                shift 1
+            fi;;
+        "-U")
+            if args_check "${2}"; then
+                export LENSES_ADMIN_NAME="${2}"
+                shift 1
+            fi;;
+        "-P")
+            if args_check "${2}"; then
+                export LENSES_PASSWORD_NAME="${2}"
+                shift 1
+            fi;;
+        "-e")
+            if args_check "${2}"; then
+                export ESP_ENABLED="${2}"
+                shift 1
+            fi;;
+        "-c")
+            if args_check "${2}"; then
+                export ESP_CREDENTIALS_ENABLED="${2}"
+                shift 1
+            fi;;
+        "-u")
+            if args_check "${2}"; then
+                export ESP_USERNAME="${2}"
+                shift 1
+            fi;;
+        "-p")
+            if args_check "${2}"; then
+                export ESP_PASSWORD="${2}"
+                shift 1
+            fi;;
+        "-k")
+            if args_check "${2}"; then
+                export ESP_KEYTAB_ENABLED="${2}"
+                shift 1
+            fi;;
+        "-v")
+            if args_check "${2}"; then
+                export ESP_B64_KEYTAB="${2}"
+                shift 1
+            fi;;
+        "-x")
+            if args_check "${2}"; then
+                export ESP_KEYTAB_PRINCIPAL="${2}"
+                shift 1
+            fi;;
+        "-j")
+            if args_check "${2}"; then
+                export ESP_JAAS_ENABLED="${2}"
+                shift 1
+            fi;;
+        "-J")
+            if args_check "${2}"; then
+                export ESP_B64_JAAS="${2}"
+                shift 1
+            fi;;
+        "-L")
+            if args_check "${2}"; then
+                export ESP_KEYTAB_LOCATION="${2}"
+                shift 1
+            fi;;
+        "-N")
+            if args_check "${2}"; then
+                export ESP_KEYTAB_NAME="${2}"
+                shift 1
+            fi;;
+        "-a")
+            if args_check "${2}"; then
+                export LENSES_CUSTOM_ARCHIVE_ENABLED="${2}"
+                shift 1
+            fi;;
+        "-R")
+            if args_check "${2}"; then
+                export LENSES_CUSTOM_ARCHIVE_URL="${2}"
+                shift 1
+            fi;;
+        "-I")
+            if args_check "${2}"; then
+                export LENSES_PORT="${2}"
+                shift 1
+            fi;;
+        *)
+            echo "Option ${optname} is not supported" | tee -a ;;
+    esac
+    shift 1
 done
 
 env | tee -a  /var/log/lenses/env
