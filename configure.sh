@@ -3,12 +3,17 @@
 ## Set runtime opts
 set -o pipefail
 
+## Runtime functions
+
+### Set exec error
 trap 'catch_err $? $LINENO' ERR
 
+### Log action is used for all lines that would do a simple echo
 function log_action() {
     echo "$(printf  '%(%Y-%m-%d %H:%M:%S)T\n'): ${*}"  | tee -a /var/log/lenses/setup.log
 }
 
+### Die function for printing message in stdout and exiting with 1
 function die() {
     for i in "${@}"; do
         log_action "${i}"
@@ -16,13 +21,17 @@ function die() {
     exit 1
 }
 
+### Trap exec error function handler
 function catch_err() {
     log_action  "Line ${2} with error: ${1}\n\nEnd of Execution"
 }
 
+### Create lenses logdir
 mkdir -vp /var/log/lenses
 
+### Write input to $logdir/env
 base64 <<< "${@}" > /var/log/lenses/env
+chmod 0600 /var/log/lenses/env
 
 while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
   case ${optname} in
