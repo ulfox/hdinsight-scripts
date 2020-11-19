@@ -86,6 +86,8 @@ while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
   esac
 done
 
+env | tee -a  /var/log/lenses/env
+
 # Configure environmental variables
 
 ## Set Lenses Global Environment
@@ -539,8 +541,6 @@ if [ "${ESP_ENABLED}" == "True" ]; then
 
     ### Exit if esp is enabled but neither credentials, nor keytab authentication methods was set
     if [ "${ESP_CREDENTIALS_ENABLED}" != "True" ] && [ "${ESP_KEYTAB_ENABLED}" != "True" ]; then
-        echo "${*}"
-        echo "${@}"
         die "ESP was enabled but credentials auth or keytab auth was set to true."
     fi
 
