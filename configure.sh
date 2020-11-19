@@ -1,8 +1,20 @@
 #!/bin/bash
 
 ## Set runtime opts
-set -o errexit
 set -o pipefail
+
+trap 'catch_err $? $LINENO' ERR
+
+function log_action() {
+    echo -e "$(printf  '%(%Y-%m-%d %H:%M:%S)T\n'): ${*}"  | tee -a /var/log/lenses/setup.log
+}
+
+function catch_err() {
+    log_action  "Line ${2} with error: ${1}\n\nEnd of Execution"
+}
+
+mkdir -vp /var/log/lenses
+
 
 while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
   case ${optname} in
@@ -45,7 +57,7 @@ while getopts n:l:e:u:p:k:j:v:z:x:m:g:q:c:P:a:R:V:J:L:N:I:U: optname; do
     I)
         LENSES_PORT="${OPTARG}";;
     *)
-        echo "Option ${optname} is not supported";;
+        echo "Option ${optname} is not supported" | tee -a ;;
   esac
 done
 
@@ -85,7 +97,7 @@ if [ ! -e "${ESP_KEYTAB_LOCATION}" ]; then
     chmod -R 0700 "${ESP_KEYTAB_LOCATION}"
 else
     if [ ! -d "${ESP_KEYTAB_LOCATION}" ]; then
-        echo "Custom keytab path: ${ESP_KEYTAB_LOCATION} does not appear to be a directory. Exiting..."
+        log_action "Custom keytab path: ${ESP_KEYTAB_LOCATION} does not appear to be a directory. Exiting..."
         exit 1
     fi
 fi
@@ -130,7 +142,7 @@ fi
 ## Function for checking sha256sum of Lenses archive
 function check_sha256() {
     pushd "${1}" >/dev/null 2>&1
-    echo "Checking sha256sum"
+    log_action "Checking sha256sum"
     if ! sha256sum -c "${2}" >/dev/null 2>&1; then
         popd >/dev/null 2>&1
         return 1
@@ -150,33 +162,33 @@ function check_sha256() {
 ## Case-3: Custom archive has been requested. No sha256sums validation is done
 ##
 if [ ! -f "${TMP_DIR}/${LENSES_ARCHIVE}" ] && [ "${LENSES_CUSTOM_ARCHIVE_ENABLED}" != "True" ]; then
-    echo "Fetching Lenses Archive"
+    log_action "Fetching Lenses Archive"
     wget -q "${LENSES_ARCHIVE_URI}" -P "${TMP_DIR}"
 
     if ! check_sha256 "${TMP_DIR}" "${LENSES_ARCHIVE_SHA256}"; then
-        echo "Error: sha256 failed verification. Exiting..."
+        log_action "Error: sha256 failed verification. Exiting..."
         exit 1
     fi
 elif [ -f "${TMP_DIR}/${LENSES_ARCHIVE}" ] && [ "${LENSES_CUSTOM_ARCHIVE_ENABLED}" != "True" ]; then
-    echo "Archive already exists"
+    log_action "Archive already exists"
     ### Validate remote sha256 with the existing archive
     if ! check_sha256 "${TMP_DIR}" "${LENSES_ARCHIVE_SHA256}"; then
-        echo "sum256sum do not match. Possibly a new version has been released"
-        echo "Fetching new archive"
+        log_action "sum256sum do not match. Possibly a new version has been released"
+        log_action "Fetching new archive"
 
         rm -f "${TMP_DIR}/${LENSES_ARCHIVE}"
         wget -q "${LENSES_ARCHIVE_URI}" -P "${TMP_DIR}"
 
         if ! check_sha256 "${TMP_DIR}" "${LENSES_ARCHIVE_SHA256}"; then
-            echo "Error: sha256 failed verification. Exiting..."
+            log_action "Error: sha256 failed verification. Exiting..."
             exit 1
         fi
     fi
 else
-    echo "Preparing to fetch custom archive"
+    log_action "Preparing to fetch custom archive"
     ### Check if a url has been provided.
     if [ -z "${LENSES_CUSTOM_ARCHIVE_URL// }" ]; then
-        echo "Custom archive has been enabled but no url was provided"
+        log_action "Custom archive has been enabled but no url was provided"
         exit 1
     fi
 
@@ -186,11 +198,11 @@ else
     if [ -n "${LENSES_ARCHIVE// }" ]; then
         rm -f "${TMP_DIR}/${LENSES_ARCHIVE}"
     else
-        echo "Can not extract custom archive name."
+        log_action "Can not extract custom archive name."
         exit 1
     fi
 
-    echo "Fetching Archive"
+    log_action "Fetching Archive"
     wget -q "${LENSES_CUSTOM_ARCHIVE_URL}" -P "${TMP_DIR}"
 fi
 
@@ -198,24 +210,24 @@ fi
 ## Extract Lenses archive under ${TMP_DIR}
 ## Check if /opt/lenses exists. Purge if so
 if [ -e /opt/lenses ]; then
-    echo "Cleaning up old lenses directory"
+    log_action "Cleaning up old lenses directory"
     rm -rf /opt/lenses
 fi
 
 ## Extract the lenses under /opt
-echo "Untar Lenses Archive"
+log_action "Untar Lenses Archive"
 tar -xzf "${TMP_DIR}/${LENSES_ARCHIVE}" -C /opt/
 
 ## We expect both official Lenses archives and custom archives to contain
 ## /lenses under the archive root
 if [ ! -e /opt/lenses ]; then
-    echo "Custom archive root dir is not lenses"
-    echo "Error: /opt/lenses does not exist after extracting"
+    log_action "Custom archive root dir is not lenses"
+    log_action "Error: /opt/lenses does not exist after extracting"
     exit 1
 fi
 
 ## AutoDiscover Kafka Brokers and Zookeeper
-echo "AutoDiscover Brokers and Zookeper"
+log_action "AutoDiscover Brokers and Zookeper"
 
 ### Declare an array and populate it with the kafka bootstrap servers
 declare -a LENSES_KAFKA_BROKERS=$(curl \
@@ -224,7 +236,7 @@ declare -a LENSES_KAFKA_BROKERS=$(curl \
     | jq -r '.host_components[].HostRoles.host_name')
 
 if [ -z "${LENSES_KAFKA_BROKERS}" ]; then
-    echo "[ERROR] Unable to find Cluster Kafka Brokers"         
+    log_action "[ERROR] Unable to find Cluster Kafka Brokers"         
     exit 1
 fi
 
@@ -261,13 +273,13 @@ EOF
 ### Check if default admin name has been set. Set to admin otherwise
 if [ -z "${LENSES_ADMIN_NAME// }" ]; then
     export LENSES_ADMIN_NAME="admin"
-    echo "No Lenses default admin username was provided."
-    echo "Setting default username: admin"
+    log_action "No Lenses default admin username was provided."
+    log_action "Setting default username: admin"
 fi
 
 ### Raise error in case default admin password has not been set
 if [ -z "${LENSES_PASSWORD_NAME// }" ]; then
-    echo "No Lenses default admin password was provided. Exiting..."
+    log_action "No Lenses default admin password was provided. Exiting..."
     exit 1
 fi
 
@@ -286,7 +298,7 @@ elif [ "${ESP_ENABLED}" == "True" ]; then
     echo 'lenses.kafka.settings.client.security.protocol = SASL_PLAINTEXT' \
         >> /opt/lenses/lenses.conf
 else
-    echo "ESP_ENABLED can only be True or False"
+    log_action "ESP_ENABLED can only be True or False"
     exit 1
 fi
 
@@ -508,11 +520,11 @@ chmod 0600 /etc/krb5.d/kafka_client_jaas.conf /etc/krb5.d/kafka_client_jaas_cred
 
 ## Configure env for ESP
 if [ "${ESP_ENABLED}" == "True" ]; then
-    echo "Setting ESP env"
+    log_action "Setting ESP env"
 
     ### Exit if esp is enabled but neither credentials, nor keytab authentication methods was set
     if [ "${ESP_CREDENTIALS_ENABLED}" != "True" ] && [ "${ESP_KEYTAB_ENABLED}" != "True" ]; then
-        echo "ESP was enabled but credentials auth or keytab auth was set to true."
+        log_action "ESP was enabled but credentials auth or keytab auth was set to true."
         exit 1
     fi
 
@@ -522,13 +534,13 @@ if [ "${ESP_ENABLED}" == "True" ]; then
 
         #### Bailout if keytab encoded string is empty
         if [ -z "${ESP_B64_KEYTAB// }" ]; then
-            echo "No b64 keytab was provided"
+            log_action "No b64 keytab was provided"
             exit 1
         fi
 
         base64 -d <<< "${ESP_B64_KEYTAB}" > "${ESP_KEYTAB_LOCATION}/${ESP_KEYTAB_NAME}"
         chmod 0600 "${ESP_KEYTAB_LOCATION}/${ESP_KEYTAB_NAME}"
-        echo "Keytab created"
+        log_action "Keytab created"
 
         #### Ensure that no ticket init and renewals services will run since keytab is expected
         #### to handle that
@@ -550,13 +562,13 @@ if [ "${ESP_ENABLED}" == "True" ]; then
             printf "%q\n" ESP_USERNAME="${ESP_USERNAME}" \
                 >> /etc/lenses.env
 
-            echo "Username parsed"
+            log_action "Username parsed"
         fi
         if ! grep -iq 'ESP_PASSWORD' /etc/lenses.env; then
             printf "%q\n" ESP_PASSWORD="${ESP_PASSWORD}" \
                 >> /etc/lenses.env
 
-            echo "Password parsed"
+            log_action "Password parsed"
         fi
     fi
 
@@ -569,13 +581,13 @@ if [ "${ESP_ENABLED}" == "True" ]; then
     ###
     if [ "${ESP_JAAS_ENABLED}" == "True" ]; then
         [ -z "${ESP_B64_JAAS// }" ] && {
-            echo "No b64 jaas was provided"
+            log_action "No b64 jaas was provided"
             exit 1
         }
 
         base64 -d <<< "${ESP_B64_JAAS}" > "/etc/krb5.d/kafka_client_jaas.conf"
         chmod 0600 "/etc/krb5.d/kafka_client_jaas.conf"
-        echo "Custom Jaas created"
+        log_action "Custom Jaas created"
     fi
 
     ### If the user has a keytab or a custom jaas, then update the JAAS_PATH 
@@ -598,12 +610,12 @@ if [ "${ESP_ENABLED}" == "True" ]; then
         echo "LENSES_OPTS=-Djava.security.auth.login.config=${JAAS_PATH}" \
             >> /etc/lenses.env
 
-        echo "Passing lenses opts to env"
+        log_action "Passing lenses opts to env"
     fi
 fi
 
 ## Do a daemon reload to let systemd know about the services we created earlier
-sudo systemctl daemon-reload
+systemctl daemon-reload
 
 ## Start Krb5 ticket init and renewal services only when esp is enabled and creds
 ## have been provided. This option is set during keytab/creds configuration above
@@ -612,22 +624,22 @@ if [ "${ESP_ENABLED}" == "True" ] && [ "${ENABLE_KRB_TICKET_INIT}" == "True" ]; 
         apt -y install kstart
     fi
 
-    sudo systemctl start krb-ticket-init.service
-    sudo systemctl enable krb-ticket-init.service
-    echo "KRB5 ticket init systemd unit started and enabled"
+    systemctl start krb-ticket-init.service
+    systemctl enable krb-ticket-init.service
+    log_action "KRB5 ticket init systemd unit started and enabled"
 
-    # sudo systemctl start krb-ticket-renewal.service
-    # sudo systemctl enable krb-ticket-renewal.service
-    # echo "KRB5 ticket renewal systemd unit started and enabled"
+    # systemctl start krb-ticket-renewal.service
+    # systemctl enable krb-ticket-renewal.service
+    # log_action "KRB5 ticket renewal systemd unit started and enabled"
 
     sleep 2
     if ! systemctl is-active krb-ticket-init.service >/dev/null 2>&1; then
-        echo "Ticket init service failed"
+        log_action "Ticket init service failed"
         exit 1
     fi
 fi
 
 ## Finaly restart lenses-io service (incase it was already started) and enable it
-sudo systemctl restart lenses-io
-sudo systemctl enable lenses-io.service
-echo "Lenses systemd unit started and enabled"
+systemctl restart lenses-io
+systemctl enable lenses-io.service
+log_action "Lenses systemd unit started and enabled"
