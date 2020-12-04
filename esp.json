@@ -265,13 +265,7 @@
     "applicationName": "[concat(parameters('galleryPackageIdentity'), '-', uniquestring('applicationName'))]",
     "sQ": "'",
 
-    "storagePostgresHostname": "[if(empty(parameters('storagePostgresHostname')), 'None', parameters('storagePostgresHostname'))]",
-    "storagePostgresPort": "[if(empty(parameters('storagePostgresPort')), 'None', parameters('storagePostgresPort'))]",
-    "storagePostgresUsername": "[if(empty(parameters('storagePostgresUsername')), 'None', parameters('storagePostgresUsername'))]",
-    "storagePostgresPassword": "[if(empty(parameters('storagePostgresPassword')), 'None', parameters('storagePostgresPassword'))]",
-    "storagePostgresDatabase": "[if(empty(parameters('storagePostgresDatabase')), 'None', parameters('storagePostgresDatabase'))]",
-
-    "addClusterNameParam": "[concat('-n ', parameters('clusterName'))]",
+    "addClusterNameParam": "[concat(' -n ', parameters('clusterName'))]",
     "addLensesVersionParam": "[concat(variables('addClusterNameParam'), ' -V ', parameters('lensesVersion'))]",
     "addLensesLicenseKeyParam": "[concat(variables('addLensesVersionParam'), ' -l ', variables('sQ'), parameters('licenseKey'), variables('sQ'))]",
     "addLensesAdminUserNameParam": "[concat(variables('addLensesLicenseKeyParam'), ' -U ', variables('sQ'), parameters('lensesAdminUserName'), variables('sQ'))]",
@@ -291,11 +285,11 @@
     "addCustomArchiveURLParam": "[concat(variables('addUseCustomLensesArchiveParam'), ' -R ', variables('sQ'), parameters('customArchiveURL'), variables('sQ'))]",
     "addIngressPortParam": "[concat(variables('addCustomArchiveURLParam'), ' -I ', variables('sQ'), parameters('ingressPort'), variables('sQ'))]",
     "storageTypeParam": "[concat(variables('addIngressPortParam'), ' -t ', parameters('storageType'))]",
-    "storagePostgresHostnameParam": "[concat(variables('storageTypeParam'), ' -H ', variables('storagePostgresHostname'))]",
-    "storagePostgresPortParam": "[concat(variables('storagePostgresHostnameParam'), ' -E ', variables('storagePostgresPort'))]",
-    "storagePostgresUsernameParam": "[concat(variables('storagePostgresPortParam'), ' -A ', variables('storagePostgresUsername'))]",
-    "storagePostgresPasswordParam": "[concat(variables('storagePostgresUsernameParam'), ' -K ', variables('storagePostgresPassword'))]",
-    "storagePostgresDatabaseParam": "[concat(variables('storagePostgresPasswordParam'), ' -D ', variables('storagePostgresDatabase'))]",
+    "storagePostgresHostnameParam": "[concat(variables('storageTypeParam'), ' -H ', parameters('storagePostgresHostname'))]",
+    "storagePostgresPortParam": "[concat(variables('storagePostgresHostnameParam'), ' -E ', parameters('storagePostgresPort'))]",
+    "storagePostgresUsernameParam": "[concat(variables('storagePostgresPortParam'), ' -A ', parameters('storagePostgresUsername'))]",
+    "storagePostgresPasswordParam": "[concat(variables('storagePostgresUsernameParam'), ' -K ', parameters('storagePostgresPassword'))]",
+    "storagePostgresDatabaseParam": "[concat(variables('storagePostgresPasswordParam'), ' -D ', parameters('storagePostgresDatabase'))]",
     "finalParameters": "[variables('storagePostgresDatabaseParam')]"
   },
   "resources": [
