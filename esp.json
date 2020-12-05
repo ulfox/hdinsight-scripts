@@ -47,6 +47,7 @@
       },
       "defaultValue": "4.0",
       "allowedValues": [
+        "4.1",
         "4.0",
         "3.2",
         "3.1",
