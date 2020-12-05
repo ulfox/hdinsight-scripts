@@ -1,0 +1,174 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the HDInsight cluster"
+      }
+    },
+    "galleryPackageIdentity": {
+      "type": "string",
+      "metadata": {
+        "description": "Lenses.io, Realtime streaming DataOps at the heart of your Business."
+      },
+      "defaultValue": "lenses-io"
+    },
+    "edgeNodeSize": {
+      "type": "string",
+      "metadata": {
+        "description": "Size of the edge node that hosts the application"
+      },
+      "defaultValue": "Standard_DS3_V2",
+      "allowedValues": [
+        "Standard_A4_V2",
+        "Standard_A8_V2",
+        "Standard_D3_V2",
+        "Standard_D4_V2",
+        "Standard_D5_V2",
+        "Standard_D12_V2",
+        "Standard_D13_V2",
+        "Standard_D14_V2",
+        "Standard_D15_V2",
+        "Standard_DS3_V2",
+        "Standard_DS4_V2",
+        "Standard_DS3_V2",
+        "Standard_DS4_V2",
+        "Standard_DS5_V2",
+        "Standard_DS12_V2",
+        "Standard_DS13_V2",
+        "Standard_DS14_V2",
+        "Standard_DS15_V2"
+      ]
+    },
+    "licenseKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Your own license for Lenses. Please download it here https://www.lenses.io/downloads/"
+      }
+    },
+    "storageType": {
+      "type": "string",
+      "defaultValue": "local",
+      "allowedValues": [
+        "local",
+        "postgres"
+      ],
+      "metadata": {
+        "description": "Lenses Storage type"
+      }
+    },
+    "storagePostgresHostname": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "(Optional - Requires Storage Type is postgres) Postgres Hostname"
+      }
+    },
+    "storagePostgresPort": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "(Optional - Requires Storage Type is postgres) Postgres Port"
+      }
+    },
+    "storagePostgresUsername": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "(Optional - Requires Storage Type is postgres) Postgres Username"
+      }
+    },
+    "storagePostgresPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "(Optional - Requires Storage Type is postgres) Postgres Password"
+      }
+    },
+    "storagePostgresDatabase": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "(Optional - Requires Storage Type is postgres) Postgres Database"
+      }
+    }
+  },
+  "variables": {
+    "applicationName": "lenses-io-4-0",
+    "singleQuote": "'",
+
+    "clusterNameParam": "[concat(' -n ', parameters('clusterName'))]",
+    "lensesLicenseParam": "[concat(variables('clusterNameParam'), ' -l ', variables('singleQuote'), parameters('licenseKey'), variables('singleQuote'))]",
+    "storageTypeParam": "[concat(variables('lensesLicenseParam'), ' -t ', parameters('storageType'))]",
+    "storagePostgresHostnameParam": "[concat(variables('storageTypeParam'), ' -H ', parameters('storagePostgresHostname'))]",
+    "storagePostgresPortParam": "[concat(variables('storagePostgresHostnameParam'), ' -E ', parameters('storagePostgresPort'))]",
+    "storagePostgresUsernameParam": "[concat(variables('storagePostgresPortParam'), ' -U ', parameters('storagePostgresUsername'))]",
+    "storagePostgresPasswordParam": "[concat(variables('storagePostgresUsernameParam'), ' -P ', parameters('storagePostgresPassword'))]",
+    "storagePostgresDatabaseParam": "[concat(variables('storagePostgresPasswordParam'), ' -D ', parameters('storagePostgresDatabase'))]",
+    "finalParameters": "[variables('storagePostgresDatabaseParam')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-02-01",
+      "name": "pid-4f74d888-8490-52d5-9694-27eeebd9a4e6",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+          "mode": "Incremental",
+          "template": {
+            "$schema": "https://schema.management.azure.com/schemas/2018-05-01/deploymentTemplate.json#",
+            "contentVersion": "1.0.0.0",
+              "resources": []
+          }
+      }
+    },
+    {
+      "apiVersion": "2018-06-01-preview",
+      "type": "Microsoft.HDInsight/clusters/applications",
+      "name": "[concat(parameters('clusterName'),'/', variables('applicationName'))]",
+      "dependsOn": [],
+      "properties": {
+        "marketPlaceIdentifier": "[parameters('galleryPackageIdentity')]",
+        "computeProfile": {
+          "roles": [
+            {
+              "name": "edgenode",
+              "targetInstanceCount": 1,
+              "hardwareProfile": {
+                "vmSize": "[parameters('edgeNodeSize')]"
+              }
+            }
+          ]
+        },
+        "installScriptActions": [
+          {
+            "name": "[concat(variables('applicationName'), '-', uniquestring('applicationName'))]",
+            "uri": "https://raw.githubusercontent.com/ulfox/hdinsight-scripts/main/plain/scripts/configure.sh",
+            "parameters": "[variables('finalParameters')]",
+            "roles": [
+              "edgenode"
+            ]
+          }
+        ],
+        "uninstallScriptActions": [],
+        "httpsEndpoints": [
+          {
+            "subDomainSuffix": "len",
+            "disableGatewayAuth": true,
+            "destinationPort": 9991,
+            "accessModes": [
+              "webpage"
+            ]
+          }
+        ],
+        "applicationType": "CustomApplication"
+      }
+    }
+  ],
+  "outputs": {
+    "application": {
+      "type": "object",
+      "value": "[reference(resourceId('Microsoft.HDInsight/clusters/applications/', parameters('clusterName'), variables('applicationName')))]"
+    }
+  }
+}
