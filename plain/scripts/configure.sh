@@ -57,6 +57,21 @@ while [ "${#}" -gt 0 ]; do
                 export LICENSE="${2}"
                 shift 1
             fi;;
+        "-lenses-admin-user")
+            if args_check "${2}"; then
+                export LENSES_ADMIN_NAME="${2}"
+                shift 1
+            fi;;
+        "-lenses-admin-password")
+            if args_check "${2}"; then
+                export LENSES_PASSWORD_NAME="${2}"
+                shift 1
+            fi;;
+        "-I")
+            if args_check "${2}"; then
+                export LENSES_PORT="${2}"
+                shift 1
+            fi;;
         "-t")
             if args_check "${2}"; then
                 export LENSES_STORAGE_TYPE="${2}"
@@ -111,6 +126,11 @@ LENSES_VERSION="4.0"
 LENSES_ARCHIVE="lenses-latest-linux64.tar.gz"
 LENSES_ARCHIVE_URI="https://archive.landoop.com/lenses/${LENSES_VERSION}/${LENSES_ARCHIVE}"
 TMP_DIR="/tmp"
+
+### Check port and set to 9991 in case it is not defined
+if [ -z "${LENSES_PORT// }" ]; then
+    export LENSES_PORT="9991"
+fi
 
 # Ambari Watch Dog Username and Password since user's username/password are not passed from the HDI app deployment template
 CLUSTER_ADMIN=$(python - <<'CLUSTER_ADMIN_END'
@@ -168,7 +188,7 @@ touch lenses.conf
 touch security.conf
 
 cat << EOF > /opt/lenses/lenses.conf
-lenses.port=9991
+lenses.port="${LENSES_PORT// }"
 
 lenses.secret.file=security.conf
 lenses.sql.state.dir="kafka-streams-state"
@@ -191,6 +211,24 @@ fi
 # Append Lenses License
 cat << EOF > /opt/lenses/license.json
 ${LICENSE}
+EOF
+
+### Check if default admin name has been set. Set to admin otherwise
+if [ -z "${LENSES_ADMIN_NAME// }" ]; then
+    export LENSES_ADMIN_NAME="admin"
+    log_action "No Lenses default admin username was provided."
+    log_action "Setting default username: admin"
+fi
+
+### Raise error in case default admin password has not been set
+if [ -z "${LENSES_PASSWORD_NAME// }" ]; then
+    die "No Lenses default admin password was provided. Exiting..."
+fi
+
+### Keep the permissions of this file 0600
+cat << EOF > /opt/lenses/security.conf
+lenses.security.user="${LENSES_ADMIN_NAME}"
+lenses.security.password="${LENSES_PASSWORD_NAME}"
 EOF
 
 if [ "${LENSES_STORAGE_TYPE}" == "postgres" ]; then

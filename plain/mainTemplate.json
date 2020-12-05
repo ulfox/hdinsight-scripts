@@ -48,6 +48,19 @@
         "description": "Your own license for Lenses. Please download it here https://www.lenses.io/downloads/"
       }
     },
+    "lensesAdminUserName": {
+      "type": "string",
+      "defaultValue": "admin",
+      "metadata": {
+        "description": "The default admin name"
+      }
+    },
+    "lensesAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password for the default admin"
+      }
+    },
     "storageType": {
       "type": "string",
       "defaultValue": "local",
@@ -92,6 +105,13 @@
       "metadata": {
         "description": "(Optional - Requires Storage Type is postgres) Postgres Database"
       }
+    },
+    "ingressPort": {
+      "type": "string",
+      "defaultValue": "9991",
+      "metadata": {
+        "description": "Ingress destionation port. This will also be the Lenses listening port"
+      }
     }
   },
   "variables": {
@@ -100,7 +120,10 @@
 
     "clusterNameParam": "[concat(' -n ', parameters('clusterName'))]",
     "lensesLicenseParam": "[concat(variables('clusterNameParam'), ' -l ', variables('singleQuote'), parameters('licenseKey'), variables('singleQuote'))]",
-    "storageTypeParam": "[concat(variables('lensesLicenseParam'), ' -t ', parameters('storageType'))]",
+    "addLensesAdminUserNameParam": "[concat(variables('lensesLicenseParam'), ' -lenses-admin-user ', variables('singleQuote'), parameters('lensesAdminUserName'), variables('singleQuote'))]",
+    "addLensesAdminPasswordParam": "[concat(variables('addLensesAdminUserNameParam'), ' -lenses-admin-password ', variables('singleQuote'), parameters('lensesAdminPassword'), variables('singleQuote'))]",
+    "addIngressPortParam": "[concat(variables('addLensesAdminPasswordParam'), ' -I ', variables('singleQuote'), parameters('ingressPort'), variables('singleQuote'))]",
+    "storageTypeParam": "[concat(variables('addIngressPortParam'), ' -t ', parameters('storageType'))]",
     "storagePostgresHostnameParam": "[concat(variables('storageTypeParam'), ' -H ', parameters('storagePostgresHostname'))]",
     "storagePostgresPortParam": "[concat(variables('storagePostgresHostnameParam'), ' -E ', parameters('storagePostgresPort'))]",
     "storagePostgresUsernameParam": "[concat(variables('storagePostgresPortParam'), ' -U ', parameters('storagePostgresUsername'))]",
